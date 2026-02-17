@@ -28,7 +28,7 @@ import kotlinx.serialization.encoding.Encoder
  */
 @Serializable
 public data class Activity(
-    val type: ActivityType = ActivityType.GAME,
+    val type: ActivityType = ActivityType.PLAYING,
     @SerialName("status_display_type") val statusDisplayType: StatusDisplayType = StatusDisplayType.NAME,
     val timestamps: ActivityTimestamps? = null,
     val details: String? = null,
@@ -63,7 +63,7 @@ public data class Activity(
 /** Represents the type of activity. */
 @Serializable(ActivityTypeSerializer::class)
 public enum class ActivityType(public val value: Short) {
-    GAME(0),
+    PLAYING(0),
     LISTENING(2),
     WATCHING(3),
     COMPETING(5),

@@ -16,8 +16,8 @@ public fun activity(block: ActivityBuilder.() -> Unit): Activity = ActivityBuild
 /** Builder class for constructing Activity instances. */
 @ActivityDSL
 public class ActivityBuilder {
-    /** Activity type. Defaults to [ActivityType.GAME]. */
-    public var type: ActivityType = ActivityType.GAME
+    /** Activity type. Defaults to [ActivityType.PLAYING]. */
+    public var type: ActivityType = ActivityType.PLAYING
 
     /** Controls which field is displayed in the user's status text. */
     public var statusDisplayType: StatusDisplayType = StatusDisplayType.NAME
