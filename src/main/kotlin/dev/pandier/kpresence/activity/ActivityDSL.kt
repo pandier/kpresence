@@ -11,7 +11,7 @@ public annotation class ActivityDSL
  * @param block The builder block used to configure the Activity.
  * @return The constructed Activity instance.
  */
-public fun activity(block: ActivityBuilder.() -> Unit): Activity = ActivityBuilder().apply(block).build()
+public fun Activity(block: ActivityBuilder.() -> Unit): Activity = ActivityBuilder().apply(block).build()
 
 /** Builder class for constructing Activity instances. */
 @ActivityDSL

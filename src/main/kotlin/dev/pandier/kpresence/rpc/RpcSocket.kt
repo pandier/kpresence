@@ -80,7 +80,6 @@ internal class RpcSocket(
             val write = launch(Dispatchers.IO) {
                 try {
                     // Handshake
-                    logger.debug("Sending handshake (client id: ${clientId})")
                     channel.write(RpcPacket(0, "{\"v\": 1,\"client_id\":\"${clientId}\"}"))
 
                     while (isActive) {
@@ -101,8 +100,8 @@ internal class RpcSocket(
             // fully dispose of everything
             outgoing.close()
             channel.close()
-            onClose(this@RpcSocket)
             logger.debug("Closed connection")
+            onClose(this@RpcSocket)
         }
     }
 
@@ -115,7 +114,6 @@ internal class RpcSocket(
     }
 
     suspend fun <T : RpcArgs> send(args: T, serializer: KSerializer<T>): Boolean {
-        // TODO: Serialize inside writing coroutine?
         val message = RpcOutgoingMessage(command = args.command, args = args, nonce = JsonPrimitive(1))
         try {
             logger.debug("Sending message: $message")

@@ -2,8 +2,7 @@
 
 package dev.pandier.kpresence.logger
 
-import java.util.logging.Level
-import java.util.logging.Logger
+import java.util.Date
 
 public interface KPresenceLogger {
     public fun error(message: String, throwable: Throwable? = null)
@@ -18,21 +17,31 @@ public interface KPresenceLogger {
         override fun debug(message: String, throwable: Throwable?) {}
     }
 
-    public class Java(private val logger: Logger = Logger.getLogger("KPresence")) : KPresenceLogger {
+    public class Println(
+        private val debug: Boolean = false,
+        private val format: String = $$"%1$tF %1$tT.%1$tL [%2$-5s] %3$s",
+    ) : KPresenceLogger {
         override fun error(message: String, throwable: Throwable?) {
-            logger.log(Level.SEVERE, message, throwable)
+            log("ERROR", message, throwable)
         }
 
         override fun warn(message: String, throwable: Throwable?) {
-            logger.log(Level.WARNING, message, throwable)
+            log("WARN", message, throwable)
         }
 
         override fun info(message: String, throwable: Throwable?) {
-            logger.log(Level.INFO, message, throwable)
+            log("INFO", message, throwable)
         }
 
         override fun debug(message: String, throwable: Throwable?) {
-            logger.log(Level.FINE, message, throwable)
+            if (debug) {
+                log("DEBUG", message, throwable)
+            }
+        }
+
+        private fun log(level: String, message: String, throwable: Throwable?) {
+            println(format.format(Date(), level, message))
+            throwable?.printStackTrace(System.out)
         }
     }
 }
