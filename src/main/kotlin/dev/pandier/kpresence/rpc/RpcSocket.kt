@@ -100,7 +100,7 @@ internal class RpcSocket(
             // fully dispose of everything
             outgoing.close()
             channel.close()
-            logger.debug("Closed connection")
+            logger.debug("Closed socket")
             onClose(this@RpcSocket)
         }
     }

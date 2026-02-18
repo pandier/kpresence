@@ -1,5 +1,6 @@
 package dev.pandier.kpresence.rpc
 
+import dev.pandier.kpresence.exception.DiscordNotFoundException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.UnixDomainSocketAddress
 import java.nio.ByteBuffer
@@ -16,7 +17,7 @@ import kotlin.coroutines.resumeWithException
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 
-internal fun openRpcPacketChannel(unixPaths: List<String>): RpcPacketChannel? {
+internal fun openRpcPacketChannel(unixPaths: List<String>): RpcPacketChannel {
     if (System.getProperty("os.name").lowercase().startsWith("windows")) {
         for (i in 0..9) {
             val path = Path("\\\\.\\pipe\\discord-ipc-$i")
@@ -36,7 +37,7 @@ internal fun openRpcPacketChannel(unixPaths: List<String>): RpcPacketChannel? {
             }
         }
     }
-    return null
+    throw DiscordNotFoundException()
 }
 
 internal class RpcPacket(val opcode: Int, val data: String)
@@ -119,6 +120,7 @@ internal class FileRpcPacketChannel(
         channel.isOpen
 }
 
+@Suppress("BlockingMethodInNonBlockingContext")
 internal class SocketRpcPacketChannel(
     private val channel: SocketChannel
 ) : RpcPacketChannel {

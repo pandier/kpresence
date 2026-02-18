@@ -7,6 +7,7 @@ import dev.pandier.kpresence.rpc.openRpcPacketChannel
 import dev.pandier.kpresence.logger.KPresenceLogger
 import dev.pandier.kpresence.activity.Activity
 import dev.pandier.kpresence.activity.ActivityBuilder
+import dev.pandier.kpresence.exception.DiscordNotFoundException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,16 +35,17 @@ public class KPresenceClient internal constructor(
     }
 
     public sealed interface ConnectResult {
-        public object Success : ConnectResult
         public object AlreadyConnected : ConnectResult
-        public object MissingInstance : ConnectResult
-        public class Failed(exception: Exception) : ConnectResult
+        public object Success : ConnectResult
+        public object Cancelled : ConnectResult
+        public class Failed(exception: Throwable) : ConnectResult
     }
 
     private val scope: CoroutineScope = CoroutineScope((parentScope?.coroutineContext ?: EmptyCoroutineContext) + SupervisorJob(parentScope?.coroutineContext?.get(Job)))
     private val mutex: Mutex = Mutex()
     private var activity: Activity? = null
     private var socket: RpcSocket? = null
+    private var connectJob: Deferred<ConnectResult>? = null
     private var autoReconnectJob: Job? = null
     private val _state = MutableStateFlow(State.DISCONNECTED)
 
@@ -53,16 +55,22 @@ public class KPresenceClient internal constructor(
     public val state: StateFlow<State> = _state.asStateFlow()
 
     public fun connect(): Deferred<ConnectResult> = async {
-        connectInternal()
+        mutex.withLock {
+            connectLocked()
+        }.await()
     }
 
     public fun disconnect(): Deferred<Boolean> = async {
-        disconnectInternal()
+        mutex.withLock {
+            disconnectLocked()
+        }
     }
 
     public fun reconnect(): Deferred<ConnectResult> = async {
-        disconnectInternal()
-        connectInternal()
+        mutex.withLock {
+            disconnectLocked()
+            connectLocked()
+        }.await()
     }
 
     public fun update(block: ActivityBuilder.() -> Unit): Deferred<Unit> {
@@ -84,54 +92,72 @@ public class KPresenceClient internal constructor(
         scope.cancel()
     }
 
-    private suspend fun connectInternal(userTriggered: Boolean = true): ConnectResult {
-        mutex.withLock {
-            if (_state.value != State.DISCONNECTED)
-                return ConnectResult.AlreadyConnected
-            _state.value = State.CONNECTING
-
-            if (userTriggered) {
-                autoReconnectJob?.cancel()
-            }
+    private fun connectLocked(userTriggered: Boolean = true): Deferred<ConnectResult> {
+        if (_state.value == State.CONNECTING) {
+            return connectJob ?: CompletableDeferred(ConnectResult.Success)
+        } else if (_state.value != State.DISCONNECTED) {
+            return CompletableDeferred(ConnectResult.AlreadyConnected)
         }
 
-        val result = try {
-            val channel = openRpcPacketChannel(unixPaths)
-            if (channel != null) {
-                val newSocket = RpcSocket(
+        _state.value = State.CONNECTING
+
+        if (userTriggered) {
+            autoReconnectJob?.cancel()
+            autoReconnectJob = null
+        }
+        connectJob?.cancel() // shouldn't happen but just to be sure
+
+        return async {
+            logger.debug("Connecting")
+
+            val result = runCatching {
+                RpcSocket(
                     clientId = clientId,
                     scope = scope,
                     logger = logger,
-                    channel = channel,
-                    onReady = this::onSocketReady,
-                    onClose = this::onSocketClose,
+                    channel = openRpcPacketChannel(unixPaths),
+                    onReady = this@KPresenceClient::onSocketReady,
+                    onClose = this@KPresenceClient::onSocketClose,
                 )
-
-                mutex.withLock {
-                    socket = newSocket
-                    _state.value = State.CONNECTED
-                }
-                logger.info("Connected to Discord")
-                ConnectResult.Success
-            } else {
-                if (userTriggered) {
-                    logger.info("Couldn't find a Discord instance")
-                }
-                ConnectResult.MissingInstance
             }
-        } catch (ex: Exception) {
-            logger.error("Failed to connect", ex)
-            ConnectResult.Failed(ex)
-        }
 
-        if (result != ConnectResult.Success) {
-            mutex.withLock {
-                _state.value = State.DISCONNECTED
-                autoReconnect()
+            try {
+                result.fold({ newSocket ->
+                    mutex.withLock {
+                        ensureActive()
+                        _state.value = State.CONNECTED
+                        connectJob = null
+                        socket = newSocket
+                        logger.info("Connected to Discord")
+                    }
+
+                    ConnectResult.Success
+                }, { exception ->
+                    mutex.withLock {
+                        ensureActive()
+                        _state.value = State.DISCONNECTED
+                        connectJob = null
+                        autoReconnectLocked()
+                    }
+
+                    if (exception is DiscordNotFoundException) {
+                        if (userTriggered) {
+                            logger.info("Could not find a running Discord instance")
+                        }
+                    } else {
+                        logger.error("Failed to connect", exception)
+                    }
+
+                    ConnectResult.Failed(exception)
+                })
+            } catch (ex: CancellationException) {
+                logger.debug("Connection process has been canceled")
+                result.getOrNull()?.close()
+                ConnectResult.Cancelled
             }
+        }.also {
+            connectJob = it
         }
-
-        return result
     }
 
     private suspend fun onSocketReady(eventSocket: RpcSocket): Unit = mutex.withLock {
@@ -145,40 +171,51 @@ public class KPresenceClient internal constructor(
         socket = null
         _state.value = State.DISCONNECTED
         logger.info("Connection with Discord has been closed")
-        autoReconnect()
+        autoReconnectLocked()
     }
 
-    private fun autoReconnect() {
+    private fun autoReconnectLocked() {
         if (!autoReconnect) return
         autoReconnectJob?.cancel()
         autoReconnectJob = scope.launch(Dispatchers.IO) {
-            logger.debug("Reconnecting in 5 seconds")
             try {
+                logger.debug("Reconnecting in 5 seconds")
+
                 delay(5000)
-                connectInternal(false)
+
+                @Suppress("DeferredResultUnused")
+                mutex.withLock {
+                    connectLocked(false)
+                    autoReconnectJob = null
+                }
             } catch (_: CancellationException) {
                 logger.debug("Reconnect cancelled")
             }
         }
     }
 
-    private suspend fun disconnectInternal(): Boolean {
-        mutex.withLock {
-            if (_state.value == State.DISCONNECTED) {
-                autoReconnectJob?.cancel()
-                return false
-            } else if (_state.value == State.CONNECTING) {
-                return false
-            }
+    private fun disconnectLocked(): Boolean {
+        logger.debug("Disconnect called in state ${_state.value}")
 
-            try {
-                socket?.close()
-                socket = null
-                _state.value = State.DISCONNECTED
-                logger.info("Disconnected from Discord")
-            } catch (ex: Exception) {
-                logger.error("Failed to disconnect", ex)
-            }
+        autoReconnectJob?.cancel()
+        autoReconnectJob = null
+        connectJob?.cancel()
+        connectJob = null
+
+        if (_state.value == State.DISCONNECTED) {
+            return false
+        } else if (_state.value == State.CONNECTING) {
+            _state.value = State.DISCONNECTED
+            return true
+        }
+
+        try {
+            socket?.close()
+            socket = null
+            _state.value = State.DISCONNECTED
+            logger.info("Disconnected from Discord")
+        } catch (ex: Exception) {
+            logger.error("Failed to disconnect", ex)
         }
         return true
     }
