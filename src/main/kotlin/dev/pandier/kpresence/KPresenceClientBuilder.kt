@@ -3,6 +3,8 @@ package dev.pandier.kpresence
 import dev.pandier.kpresence.logger.KPresenceLogger
 import kotlinx.coroutines.CoroutineScope
 import java.lang.System.getenv
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 // TODO: Only do this if on Linux
 private fun defaultUnixPaths(): MutableList<String> =
@@ -18,6 +20,7 @@ public class KPresenceClientBuilder(
     public var parentScope: CoroutineScope? = null
     public var logger: KPresenceLogger = KPresenceLogger.Dummy
     public var autoReconnect: Boolean = true
+    public var autoReconnectDelay: Duration = 15.seconds
     private val unixPaths: MutableList<String> = defaultUnixPaths()
 
     public fun addUnixPath(path: String) {
@@ -34,6 +37,6 @@ public class KPresenceClientBuilder(
     }
 
     internal fun build(): KPresenceClient {
-        return KPresenceClient(clientId, parentScope, logger, autoReconnect, unixPaths)
+        return KPresenceClient(clientId, parentScope, logger, autoReconnect, autoReconnectDelay, unixPaths)
     }
 }

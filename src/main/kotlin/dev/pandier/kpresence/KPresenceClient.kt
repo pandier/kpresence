@@ -16,6 +16,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.Closeable
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.time.Duration
 
 public fun KPresenceClient(clientId: Long, block: KPresenceClientBuilder.() -> Unit = {}): KPresenceClient =
     KPresenceClientBuilder(clientId).also(block).build()
@@ -25,6 +26,7 @@ public class KPresenceClient internal constructor(
     parentScope: CoroutineScope?,
     public val logger: KPresenceLogger,
     private val autoReconnect: Boolean,
+    private val autoReconnectDelay: Duration,
     private val unixPaths: List<String>,
 ) : Closeable {
     public enum class State {
@@ -179,9 +181,9 @@ public class KPresenceClient internal constructor(
         autoReconnectJob?.cancel()
         autoReconnectJob = scope.launch(Dispatchers.IO) {
             try {
-                logger.debug("Reconnecting in 5 seconds")
+                logger.debug("Reconnecting in ${autoReconnectDelay}")
 
-                delay(5000)
+                delay(autoReconnectDelay)
 
                 @Suppress("DeferredResultUnused")
                 mutex.withLock {
