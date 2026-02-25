@@ -1,6 +1,7 @@
 package dev.pandier.kpresence.rpc
 
 import dev.pandier.kpresence.exception.DiscordNotFoundException
+import dev.pandier.kpresence.util.isUnix
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.UnixDomainSocketAddress
 import java.nio.ByteBuffer
@@ -18,22 +19,22 @@ import kotlin.io.path.Path
 import kotlin.io.path.exists
 
 internal fun openRpcPacketChannel(unixPaths: List<String>): RpcPacketChannel {
-    if (System.getProperty("os.name").lowercase().startsWith("windows")) {
-        for (i in 0..9) {
-            val path = Path("\\\\.\\pipe\\discord-ipc-$i")
-            try {
-                val fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)
-                return FileRpcPacketChannel(fileChannel)
-            } catch (_: NoSuchFileException) {
-            }
-        }
-    } else {
+    if (isUnix) {
         for (dirPath in unixPaths) {
             for (i in 0..9) {
                 val path = Path(dirPath).resolve("discord-ipc-$i")
                 if (!path.exists()) continue // there is no good atomic way to check this
                 val socketChannel = SocketChannel.open(UnixDomainSocketAddress.of(path))
                 return SocketRpcPacketChannel(socketChannel)
+            }
+        }
+    } else {
+        for (i in 0..9) {
+            val path = Path("\\\\.\\pipe\\discord-ipc-$i")
+            try {
+                val fileChannel = AsynchronousFileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE)
+                return FileRpcPacketChannel(fileChannel)
+            } catch (_: NoSuchFileException) {
             }
         }
     }

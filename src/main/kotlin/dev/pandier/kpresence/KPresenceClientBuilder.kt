@@ -1,18 +1,10 @@
 package dev.pandier.kpresence
 
 import dev.pandier.kpresence.logger.KPresenceLogger
+import dev.pandier.kpresence.util.defaultUnixPaths
 import kotlinx.coroutines.CoroutineScope
-import java.lang.System.getenv
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-
-// TODO: Only do this if on Linux
-private fun defaultUnixPaths(): MutableList<String> =
-    listOf("XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP")
-        .mapNotNull { getenv(it) }
-        .plus("/tmp")
-        .flatMap { base -> listOf(base, "$base/app/com.discordapp.Discord", "$base/snap.discord") }
-        .toMutableList()
 
 public class KPresenceClientBuilder(
     public val clientId: Long,
@@ -21,19 +13,21 @@ public class KPresenceClientBuilder(
     public var logger: KPresenceLogger = KPresenceLogger.Dummy
     public var autoReconnect: Boolean = true
     public var autoReconnectDelay: Duration = 15.seconds
-    private val unixPaths: MutableList<String> = defaultUnixPaths()
+    private val unixPaths: MutableList<String> = mutableListOf()
 
-    public fun addUnixPath(path: String) {
-        unixPaths += path
+    public val isUnix: Boolean
+        get() = dev.pandier.kpresence.util.isUnix
+
+    init {
+        unixPaths {
+            addAll(defaultUnixPaths)
+        }
     }
 
-    public fun addUnixPaths(vararg paths: String) {
-        unixPaths += paths
-    }
-
-    public fun unixPaths(paths: List<String>) {
-        unixPaths.clear()
-        unixPaths += paths
+    public fun unixPaths(block: MutableList<String>.() -> Unit) {
+        if (isUnix) {
+            unixPaths.block()
+        }
     }
 
     internal fun build(): KPresenceClient {

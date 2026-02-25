@@ -18,11 +18,15 @@ import java.io.Closeable
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
 
-public fun KPresenceClient(clientId: Long, block: KPresenceClientBuilder.() -> Unit = {}): KPresenceClient =
-    KPresenceClientBuilder(clientId).also(block).build()
+public fun KPresenceClient(
+    clientId: Long,
+    block: KPresenceClientBuilder.() -> Unit = {}
+): KPresenceClient {
+    return KPresenceClientBuilder(clientId).apply(block).build()
+}
 
 public class KPresenceClient internal constructor(
-    public var clientId: Long,
+    clientId: Long,
     parentScope: CoroutineScope?,
     public val logger: KPresenceLogger,
     private val autoReconnect: Boolean,
@@ -36,13 +40,6 @@ public class KPresenceClient internal constructor(
         READY,
     }
 
-    public sealed interface ConnectResult {
-        public object AlreadyConnected : ConnectResult
-        public object Success : ConnectResult
-        public object Cancelled : ConnectResult
-        public class Failed(exception: Throwable) : ConnectResult
-    }
-
     private val scope: CoroutineScope = CoroutineScope((parentScope?.coroutineContext ?: EmptyCoroutineContext) + SupervisorJob(parentScope?.coroutineContext?.get(Job)))
     private val mutex: Mutex = Mutex()
     private var activity: Activity? = null
@@ -51,10 +48,20 @@ public class KPresenceClient internal constructor(
     private var autoReconnectJob: Job? = null
     private val _state = MutableStateFlow(State.DISCONNECTED)
 
+    public var clientId: Long = clientId
+        private set
+
     /**
      * A [StateFlow] of the client's [State].
      */
     public val state: StateFlow<State> = _state.asStateFlow()
+
+    public sealed interface ConnectResult {
+        public object Success : ConnectResult
+        public object AlreadyConnected : ConnectResult
+        public object Cancelled : ConnectResult
+        public class Failed(exception: Throwable) : ConnectResult
+    }
 
     public fun connect(): Deferred<ConnectResult> = async {
         mutex.withLock {
@@ -90,6 +97,12 @@ public class KPresenceClient internal constructor(
         }
     }
 
+    public suspend fun changeClientId(clientId: Long) {
+        mutex.withLock {
+            this.clientId = clientId
+        }
+    }
+
     override fun close() {
         scope.cancel()
     }
@@ -108,6 +121,8 @@ public class KPresenceClient internal constructor(
             autoReconnectJob = null
         }
         connectJob?.cancel() // shouldn't happen but just to be sure
+
+        val clientId = clientId
 
         return async {
             logger.debug("Connecting")
@@ -181,7 +196,7 @@ public class KPresenceClient internal constructor(
         autoReconnectJob?.cancel()
         autoReconnectJob = scope.launch(Dispatchers.IO) {
             try {
-                logger.debug("Reconnecting in ${autoReconnectDelay}")
+                logger.debug("Reconnecting in $autoReconnectDelay")
 
                 delay(autoReconnectDelay)
 
