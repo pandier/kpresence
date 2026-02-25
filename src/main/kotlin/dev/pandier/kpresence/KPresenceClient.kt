@@ -18,6 +18,9 @@ import java.io.Closeable
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
 
+/**
+ * Builds a new instance of a [KPresenceClient].
+ */
 public fun KPresenceClient(
     clientId: Long,
     block: KPresenceClientBuilder.() -> Unit = {}
@@ -25,6 +28,9 @@ public fun KPresenceClient(
     return KPresenceClientBuilder(clientId).apply(block).build()
 }
 
+/**
+ * The client that connects to Discord and manages state and reconnections.
+ */
 public class KPresenceClient internal constructor(
     clientId: Long,
     parentScope: CoroutineScope?,
@@ -33,11 +39,41 @@ public class KPresenceClient internal constructor(
     private val autoReconnectDelay: Duration,
     private val unixPaths: List<String>,
 ) : Closeable {
+    /**
+     * The state of the [KPresenceClient].
+     */
     public enum class State {
         DISCONNECTED,
         CONNECTING,
         CONNECTED,
         READY,
+    }
+
+    /**
+     * Represents the result of a connection process.
+     *
+     * @see connect
+     */
+    public sealed interface ConnectResult {
+        /**
+         * The client has successfully connected to Discord.
+         */
+        public object Success : ConnectResult
+
+        /**
+         * The client is already connected and nothing happened.
+         */
+        public object AlreadyConnected : ConnectResult
+
+        /**
+         * The connection process was cancelled (e.g., [disconnect] was called).
+         */
+        public object Cancelled : ConnectResult
+
+        /**
+         * The conenction process failed with the given [exception].
+         */
+        public class Failed(exception: Throwable) : ConnectResult
     }
 
     private val scope: CoroutineScope = CoroutineScope((parentScope?.coroutineContext ?: EmptyCoroutineContext) + SupervisorJob(parentScope?.coroutineContext?.get(Job)))
@@ -48,6 +84,10 @@ public class KPresenceClient internal constructor(
     private var autoReconnectJob: Job? = null
     private val _state = MutableStateFlow(State.DISCONNECTED)
 
+    /**
+     * The current configured client id.
+     */
+    @Volatile
     public var clientId: Long = clientId
         private set
 
@@ -56,25 +96,35 @@ public class KPresenceClient internal constructor(
      */
     public val state: StateFlow<State> = _state.asStateFlow()
 
-    public sealed interface ConnectResult {
-        public object Success : ConnectResult
-        public object AlreadyConnected : ConnectResult
-        public object Cancelled : ConnectResult
-        public class Failed(exception: Throwable) : ConnectResult
-    }
-
+    /**
+     * Asynchronously attempts to connect to Discord and returns a [ConnectResult],
+     */
     public fun connect(): Deferred<ConnectResult> = async {
         mutex.withLock {
             connectLocked()
         }.await()
     }
 
+    /**
+     * Asynchronously disconnects from Discord or cancels an ongoing connection process.
+     *
+     * Using this method to disconnect doesn't trigger automatic reconnections
+     * and stops the reconnection loop.
+     *
+     * Returns false if the client is not connected.
+     */
     public fun disconnect(): Deferred<Boolean> = async {
         mutex.withLock {
             disconnectLocked()
         }
     }
 
+    /**
+     * Asynchronously disconnects and connects to Discord in a sequence
+     * and returns a result of the connection process.
+     * 
+     * This method cannot return [ConnectResult.AlreadyConnected].
+     */
     public fun reconnect(): Deferred<ConnectResult> = async {
         mutex.withLock {
             disconnectLocked()
@@ -82,10 +132,12 @@ public class KPresenceClient internal constructor(
         }.await()
     }
 
-    public fun update(block: ActivityBuilder.() -> Unit): Deferred<Unit> {
-        return update(Activity(block))
-    }
-
+    /**
+     * Asynchronously updates the activity.
+     *
+     * If the client is disconnected, the activity is stored and sent
+     * after establishing a successful connection.
+     */
     public fun update(newActivity: Activity?): Deferred<Unit> = async {
         mutex.withLock {
             if (activity == newActivity)
@@ -97,12 +149,24 @@ public class KPresenceClient internal constructor(
         }
     }
 
+    public fun update(block: ActivityBuilder.() -> Unit): Deferred<Unit> {
+        return update(Activity(block))
+    }
+
+    /**
+     * Changes the client id that will be used for the next connection process.
+     *
+     * Requires to call [reconnect] afterward for it to update in Discord.
+     */
     public suspend fun changeClientId(clientId: Long) {
         mutex.withLock {
             this.clientId = clientId
         }
     }
 
+    /**
+     * Cancels all processes.
+     */
     override fun close() {
         scope.cancel()
     }

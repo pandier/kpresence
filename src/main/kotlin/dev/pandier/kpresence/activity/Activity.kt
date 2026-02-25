@@ -11,15 +11,15 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 /**
- * Represents a user's activity on Discord. Most fields have a maximum length of 128 characters.
+ * Represents a user's activity on Discord.
  *
- * @property type Activity type.
+ * @property type The type of activity.
  * @property statusDisplayType Controls which field is displayed in the user's status text.
- * @property timestamps Unix timestamps for start and/or end of the game.
- * @property details What the player is currently doing.
- * @property detailsUrl URL that is linked when clicking on the details text.
- * @property state User's current party status, or text used for a custom status.
- * @property stateUrl URL that is linked when clicking on the state text.
+ * @property timestamps Unix timestamps for start and/or end of the activity.
+ * @property details What the player is currently doing (2 to 128 characters).
+ * @property detailsUrl URL that is linked when clicking on the details text (1 to 256 characters).
+ * @property state User's current party status, or text used for a custom status (2 to 128 characters).
+ * @property stateUrl URL that is linked when clicking on the state text (1 to 256 characters).
  * @property party Information for the current party of the player.
  * @property assets Images for the presence and their hover texts.
  * @property secrets Secrets for Rich Presence joining and spectating.
@@ -30,37 +30,29 @@ import kotlinx.serialization.encoding.Encoder
 public data class Activity(
     val type: ActivityType = ActivityType.PLAYING,
     @SerialName("status_display_type") val statusDisplayType: StatusDisplayType = StatusDisplayType.NAME,
-    val timestamps: ActivityTimestamps? = null,
+    val timestamps: ActivityTimestamps = ActivityTimestamps(),
     val details: String? = null,
     @SerialName("details_url") val detailsUrl: String? = null,
     val state: String? = null,
     @SerialName("state_url") val stateUrl: String? = null,
-    val party: ActivityParty? = null,
-    val assets: ActivityAssets? = null,
-    val secrets: ActivitySecrets? = null,
+    val party: ActivityParty = ActivityParty(),
+    val assets: ActivityAssets = ActivityAssets(),
+    val secrets: ActivitySecrets = ActivitySecrets(),
     val instance: Boolean? = null,
-    val buttons: Array<ActivityButton>? = null
+    val buttons: List<ActivityButton> = listOf(),
 ) {
     init {
-        require(details == null || details.length in 2..128) {
-            "Details must be between 2 and 128 characters."
-        }
-        require(detailsUrl == null || detailsUrl.length in 2..256) {
-            "Details URL must be between 2 and 256 characters."
-        }
-        require(state == null || state.length in 2..128) {
-            "State must be between 2 and 128 characters."
-        }
-        require(stateUrl == null || stateUrl.length in 2..256) {
-            "State URL must be between 2 and 256 characters."
-        }
-        require(buttons == null || buttons.size <= 2) {
-            "Buttons have a maximum size of 2, received ${buttons?.size}."
-        }
+        require(details == null || details.length in 2..128) { "details must be between 2 and 128 characters" }
+        require(detailsUrl == null || detailsUrl.length in 1..256) { "detailsUrl must be between 2 and 256 characters" }
+        require(state == null || state.length in 2..128) { "state must be between 2 and 128 characters" }
+        require(stateUrl == null || stateUrl.length in 1..256) { "stateUrl must be between 2 and 256 characters" }
+        require(buttons.size <= 2) { "buttons must contain less than or equal to 2 items" }
     }
 }
 
-/** Represents the type of activity. */
+/**
+ * Represents the type of [Activity].
+ */
 @Serializable(ActivityTypeSerializer::class)
 public enum class ActivityType(public val value: Short) {
     PLAYING(0),
@@ -69,7 +61,9 @@ public enum class ActivityType(public val value: Short) {
     COMPETING(5),
 }
 
-/** Controls which field is displayed in the user's status text. */
+/**
+ * Controls which field is displayed in the user's status text.
+ */
 @Serializable(StatusDisplayTypeSerializer::class)
 public enum class StatusDisplayType(public val value: Short) {
     NAME(0),
@@ -78,40 +72,43 @@ public enum class StatusDisplayType(public val value: Short) {
 }
 
 /**
- * Represents the timestamps for an activity.
+ * Represents the timestamps for an [Activity].
  *
- * @property start Unix time (in milliseconds) of when the activity started.
- * @property end Unix time (in milliseconds) of when the activity ends.
+ * @property start Unix time in milliseconds of when the activity started.
+ * @property end Unix time in milliseconds of when the activity ends.
  */
 @Serializable
-public data class ActivityTimestamps(val start: Long? = null, val end: Long? = null) {}
+public data class ActivityTimestamps(
+    val start: Long? = null,
+    val end: Long? = null,
+)
 
 /**
- * Represents the party for an activity.
+ * Represents the party for an [Activity].
  *
- * @property id ID of the party.
- * @property size Used to show the party's current and maximum size up to 5.
+ * @property id ID of the party (2 to 128 characters).
+ * @property size An array of 2 integers representing the party's current size (1st item) and maximum size (2nd item).
  */
 @Serializable
-public data class ActivityParty(val id: String? = null, val size: IntArray? = null) {
+public data class ActivityParty(
+    val id: String? = null,
+    val size: IntArray? = null,
+) {
     init {
-        require(id == null || id.length in 2..128) { "ID must be between 2 and 128 characters." }
-        require(size == null || size.size == 2) { "Size must be an array of 2 integers." }
-        require(size == null || size.all { it in 0..5 } && size[0] <= size[1]) {
-            "Size must be an array of 2 integers between 0 and 5, with the former not exceeding the latter."
-        }
+        require(id == null || id.length in 2..128) { "id must be between 2 and 128 characters" }
+        require(size == null || size.size == 2) { "size must be an array of 2 integers" }
     }
 }
 
 /**
  * Represents the assets for an activity.
  *
- * @property largeImage ID of the large image, or a URL.
- * @property largeText Text displayed when hovering over the large image of the activity.
- * @property largeUrl URL of the large image.
- * @property smallImage ID of the small image, or a URL.
- * @property smallText Text displayed when hovering over the small image of the activity.
- * @property smallUrl URL of the small image.
+ * @property largeImage ID of the large image or a URL (1 to 300 characters).
+ * @property largeText Text displayed when hovering over the large image of the activity (2 to 128 characters).
+ * @property largeUrl URL that is opened when clicking the large image (1 to 256 characters).
+ * @property smallImage ID of the small image or a URL (1 to 300 characters).
+ * @property smallText Text displayed when hovering over the small image of the activity (2 to 128 characters).
+ * @property smallUrl URL that is opened when clicking the small image (1 to 256 characters).
  */
 @Serializable
 public data class ActivityAssets(
@@ -123,33 +120,21 @@ public data class ActivityAssets(
     @SerialName("small_url") val smallUrl: String? = null
 ) {
     init {
-        require(largeImage == null || largeImage.length in 2..256) {
-            "Large image must be between 2 and 256 characters."
-        }
-        require(largeText == null || largeText.length in 2..128) {
-            "Large text must be between 2 and 128 characters."
-        }
-        require(largeUrl == null || largeUrl.length in 2..256) {
-            "Large URL must be between 2 and 256 characters."
-        }
-//        require(smallImage == null || smallImage.length in 2..256) {
-//            "Small image must be between 2 and 256 characters."
-//        }
-        require(smallText == null || smallText.length in 2..128) {
-            "Small text must be between 2 and 128 characters."
-        }
-        require(smallUrl == null || smallUrl.length in 2..256) {
-            "Small URL must be between 2 and 256 characters."
-        }
+        require(largeImage == null || largeImage.length in 1..300) { "largeImage must be between 1 and 300 characters" }
+        require(largeText == null || largeText.length in 2..128) { "largeText must be between 2 and 128 characters" }
+        require(largeUrl == null || largeUrl.length in 1..256) { "largeUrl must be between 1 and 256 characters" }
+        require(smallImage == null || smallImage.length in 1..300) { "smallImage must be between 1 and 300 characters" }
+        require(smallText == null || smallText.length in 2..128) { "smallText must be between 2 and 128 characters" }
+        require(smallUrl == null || smallUrl.length in 1..256) { "smallUrl must be between 1 and 256 characters" }
     }
 }
 
 /**
  * Represents the secrets for an activity.
  *
- * @property join Secret for joining a party.
- * @property spectate Secret for spectating a game.
- * @property match Secret for a specific instanced match.
+ * @property join Secret for joining a party (2 to 128 characters).
+ * @property spectate Secret for spectating a game (2 to 128 characters).
+ * @property match Secret for a specific instanced match (2 to 128 characters).
  */
 @Serializable
 public data class ActivitySecrets(
@@ -158,33 +143,26 @@ public data class ActivitySecrets(
     val match: String? = null
 ) {
     init {
-        require(join == null || join.length in 2..128) {
-            "Join secret must be between 2 and 128 characters."
-        }
-        require(spectate == null || spectate.length in 2..128) {
-            "Spectate secret must be between 2 and 128 characters."
-        }
-        require(match == null || match.length in 2..128) {
-            "Match secret must be between 2 and 128 characters."
-        }
+        require(join == null || join.length in 2..128) { "join secret must be between 2 and 128 characters" }
+        require(spectate == null || spectate.length in 2..128) { "spectate secret must be between 2 and 128 characters" }
+        require(match == null || match.length in 2..128) { "match secret must be between 2 and 128 characters" }
     }
 }
 
 /**
  * Represents a button for an activity.
  *
- * @property label Text shown on the button (1-32 characters).
- * @property url URL opened when clicking the button (1-512 characters).
+ * @property label Text shown on the button (1 to 32 characters).
+ * @property url URL opened when clicking the button (1 to 512 characters).
  */
 @Serializable
 public data class ActivityButton(val label: String, val url: String) {
     init {
-        require(label.length in 2..32) { "Label must be between 2 and 32 characters." }
-        require(url.length in 2..512) { "URL must be between 2 and 512 characters." }
+        require(label.length in 1..32) { "label must be between 2 and 32 characters" }
+        require(url.length in 1..512) { "url must be between 2 and 512 characters" }
     }
 }
 
-/** Serializer for the ActivityType enum. */
 private object ActivityTypeSerializer : KSerializer<ActivityType> {
     override val descriptor = PrimitiveSerialDescriptor("ActivityType", PrimitiveKind.SHORT)
 
