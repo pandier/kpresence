@@ -13,6 +13,7 @@ import kotlinx.serialization.encoding.Encoder
 /**
  * Represents a user's activity on Discord.
  *
+ * @property name The name of the activity (1 to 128 characters).
  * @property type The type of activity.
  * @property statusDisplayType Controls which field is displayed in the user's status text.
  * @property timestamps Unix timestamps for start and/or end of the activity.
@@ -28,6 +29,7 @@ import kotlinx.serialization.encoding.Encoder
  */
 @Serializable
 public data class Activity(
+    val name: String? = null,
     val type: ActivityType = ActivityType.PLAYING,
     @SerialName("status_display_type") val statusDisplayType: StatusDisplayType = StatusDisplayType.NAME,
     val timestamps: ActivityTimestamps = ActivityTimestamps(),
@@ -42,6 +44,7 @@ public data class Activity(
     val buttons: List<ActivityButton> = listOf(),
 ) {
     init {
+        require(name == null || name.length in 1..128) { "name must be between 1 and 128 characters" }
         require(details == null || details.length in 2..128) { "details must be between 2 and 128 characters" }
         require(detailsUrl == null || detailsUrl.length in 1..256) { "detailsUrl must be between 2 and 256 characters" }
         require(state == null || state.length in 2..128) { "state must be between 2 and 128 characters" }

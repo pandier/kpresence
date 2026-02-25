@@ -16,6 +16,13 @@ public fun Activity(block: ActivityBuilder.() -> Unit): Activity = ActivityBuild
 @ActivityDsl
 public class ActivityBuilder {
     /**
+     * The name of the activity (1 to 128 characters).
+     *
+     * Uses the application name based on the client id if null.
+     */
+    public var name: String? = null
+
+    /**
      * The type of the activity. Defaults to [ActivityType.PLAYING].
      */
     public var type: ActivityType = ActivityType.PLAYING
@@ -123,6 +130,7 @@ public class ActivityBuilder {
      */
     public fun build(): Activity {
         return Activity(
+            name,
             type,
             statusDisplayType,
             timestamps.build(),
