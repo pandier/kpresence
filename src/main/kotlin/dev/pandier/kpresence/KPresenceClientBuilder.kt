@@ -31,7 +31,7 @@ public class KPresenceClientBuilder(
     /**
      * The delay as a [Duration] used between automatic reconnections.
      */
-    public var autoReconnectDelay: Duration = 15.seconds
+    public var autoReconnectDelay: Duration = 20.seconds
 
     /**
      * Indicates whether the runtime operating system is Unix-like.

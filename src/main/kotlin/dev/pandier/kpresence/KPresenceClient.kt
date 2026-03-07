@@ -66,14 +66,14 @@ public class KPresenceClient internal constructor(
         public object AlreadyConnected : ConnectResult
 
         /**
-         * The connection process was cancelled (e.g., [disconnect] was called).
+         * The connection process failed with the given [exception].
+         *
+         * Useful exceptions for handling specific failures:
+         *
+         * - [DiscordNotFoundException]
+         * - [CancellationException]
          */
-        public object Cancelled : ConnectResult
-
-        /**
-         * The conenction process failed with the given [exception].
-         */
-        public class Failed(exception: Throwable) : ConnectResult
+        public data class Failed(public val exception: Throwable) : ConnectResult
     }
 
     private val scope: CoroutineScope = CoroutineScope((parentScope?.coroutineContext ?: EmptyCoroutineContext) + SupervisorJob(parentScope?.coroutineContext?.get(Job)))
@@ -234,7 +234,7 @@ public class KPresenceClient internal constructor(
             } catch (ex: CancellationException) {
                 logger.debug("Connection process has been canceled")
                 result.getOrNull()?.close()
-                ConnectResult.Cancelled
+                ConnectResult.Failed(ex)
             }
         }.also {
             connectJob = it
