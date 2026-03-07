@@ -97,7 +97,7 @@ public class KPresenceClient internal constructor(
     public val state: StateFlow<State> = _state.asStateFlow()
 
     /**
-     * Asynchronously attempts to connect to Discord and returns a [ConnectResult],
+     * Asynchronously attempts to connect to Discord and returns a [ConnectResult].
      */
     public fun connect(): Deferred<ConnectResult> = async {
         mutex.withLock {
