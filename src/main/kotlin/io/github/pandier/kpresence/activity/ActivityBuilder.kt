@@ -1,6 +1,6 @@
 @file:Suppress("unused", "MemberVisibilityCanBePrivate")
 
-package dev.pandier.kpresence.activity
+package io.github.pandier.kpresence.activity
 
 @DslMarker
 public annotation class ActivityDsl

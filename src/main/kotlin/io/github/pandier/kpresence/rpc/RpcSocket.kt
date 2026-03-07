@@ -1,7 +1,7 @@
-package dev.pandier.kpresence.rpc
+package io.github.pandier.kpresence.rpc
 
-import dev.pandier.kpresence.activity.Activity
-import dev.pandier.kpresence.logger.KPresenceLogger
+import io.github.pandier.kpresence.activity.Activity
+import io.github.pandier.kpresence.logger.KPresenceLogger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

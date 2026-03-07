@@ -1,13 +1,13 @@
-package dev.pandier.kpresence
+package io.github.pandier.kpresence
 
-import dev.pandier.kpresence.logger.KPresenceLogger
-import dev.pandier.kpresence.util.defaultUnixPaths
+import io.github.pandier.kpresence.logger.KPresenceLogger
+import io.github.pandier.kpresence.util.defaultUnixPaths
 import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * A builder for constructing a [KPresenceClient] instance.
+ * A builder for constructing a [io.github.pandier.kpresence.KPresenceClient] instance.
  */
 public class KPresenceClientBuilder(
     public val clientId: Long,
@@ -19,9 +19,9 @@ public class KPresenceClientBuilder(
     public var parentScope: CoroutineScope? = null
 
     /**
-     * The [KPresenceLogger] used for logging.
+     * The [io.github.pandier.kpresence.logger.KPresenceLogger] used for logging.
      */
-    public var logger: KPresenceLogger = KPresenceLogger.Dummy
+    public var logger: io.github.pandier.kpresence.logger.KPresenceLogger = _root_ide_package_.io.github.pandier.kpresence.logger.KPresenceLogger.Dummy
 
     /**
      * Toggles automatic reconnecting on disconnection.
@@ -39,7 +39,7 @@ public class KPresenceClientBuilder(
      * The value is lazily evaluated using the `os.name` JVM system property.
      */
     public val isUnix: Boolean
-        get() = dev.pandier.kpresence.util.isUnix
+        get() = _root_ide_package_.io.github.pandier.kpresence.util.isUnix
 
     private val unixPaths: MutableList<String> = mutableListOf()
 
@@ -55,11 +55,18 @@ public class KPresenceClientBuilder(
 
     init {
         unixPaths {
-            addAll(defaultUnixPaths)
+            addAll(_root_ide_package_.io.github.pandier.kpresence.util.defaultUnixPaths)
         }
     }
 
-    internal fun build(): KPresenceClient {
-        return KPresenceClient(clientId, parentScope, logger, autoReconnect, autoReconnectDelay, unixPaths)
+    internal fun build(): io.github.pandier.kpresence.KPresenceClient {
+        return _root_ide_package_.io.github.pandier.kpresence.KPresenceClient(
+            clientId,
+            parentScope,
+            logger,
+            autoReconnect,
+            autoReconnectDelay,
+            unixPaths
+        )
     }
 }

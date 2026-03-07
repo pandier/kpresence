@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package dev.pandier.kpresence.logger
+package io.github.pandier.kpresence.logger
 
 import java.util.Date
 

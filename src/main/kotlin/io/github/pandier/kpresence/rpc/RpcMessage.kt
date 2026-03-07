@@ -1,6 +1,6 @@
-package dev.pandier.kpresence.rpc
+package io.github.pandier.kpresence.rpc
 
-import dev.pandier.kpresence.activity.Activity
+import io.github.pandier.kpresence.activity.Activity
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement

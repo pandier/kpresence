@@ -1,7 +1,7 @@
-package dev.pandier.kpresence.rpc
+package io.github.pandier.kpresence.rpc
 
-import dev.pandier.kpresence.exception.DiscordNotFoundException
-import dev.pandier.kpresence.util.isUnix
+import io.github.pandier.kpresence.exception.DiscordNotFoundException
+import io.github.pandier.kpresence.util.isUnix
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.UnixDomainSocketAddress
 import java.nio.ByteBuffer

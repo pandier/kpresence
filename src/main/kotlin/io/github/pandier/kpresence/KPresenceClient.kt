@@ -1,13 +1,13 @@
 @file:Suppress("MemberVisibilityCanBePrivate", "unused")
 
-package dev.pandier.kpresence
+package io.github.pandier.kpresence
 
-import dev.pandier.kpresence.rpc.RpcSocket
-import dev.pandier.kpresence.rpc.openRpcPacketChannel
-import dev.pandier.kpresence.logger.KPresenceLogger
-import dev.pandier.kpresence.activity.Activity
-import dev.pandier.kpresence.activity.ActivityBuilder
-import dev.pandier.kpresence.exception.DiscordNotFoundException
+import io.github.pandier.kpresence.rpc.RpcSocket
+import io.github.pandier.kpresence.rpc.openRpcPacketChannel
+import io.github.pandier.kpresence.logger.KPresenceLogger
+import io.github.pandier.kpresence.activity.Activity
+import io.github.pandier.kpresence.activity.ActivityBuilder
+import io.github.pandier.kpresence.exception.DiscordNotFoundException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,9 +23,9 @@ import kotlin.time.Duration
  */
 public fun KPresenceClient(
     clientId: Long,
-    block: KPresenceClientBuilder.() -> Unit = {}
-): KPresenceClient {
-    return KPresenceClientBuilder(clientId).apply(block).build()
+    block: io.github.pandier.kpresence.KPresenceClientBuilder.() -> Unit = {}
+): io.github.pandier.kpresence.KPresenceClient {
+    return _root_ide_package_.io.github.pandier.kpresence.KPresenceClientBuilder(clientId).apply(block).build()
 }
 
 /**
@@ -34,7 +34,7 @@ public fun KPresenceClient(
 public class KPresenceClient internal constructor(
     clientId: Long,
     parentScope: CoroutineScope?,
-    public val logger: KPresenceLogger,
+    public val logger: io.github.pandier.kpresence.logger.KPresenceLogger,
     private val autoReconnect: Boolean,
     private val autoReconnectDelay: Duration,
     private val unixPaths: List<String>,
@@ -70,7 +70,7 @@ public class KPresenceClient internal constructor(
          *
          * Useful exceptions for handling specific failures:
          *
-         * - [DiscordNotFoundException]
+         * - [io.github.pandier.kpresence.exception.DiscordNotFoundException]
          * - [CancellationException]
          */
         public data class Failed(public val exception: Throwable) : ConnectResult
@@ -78,8 +78,8 @@ public class KPresenceClient internal constructor(
 
     private val scope: CoroutineScope = CoroutineScope((parentScope?.coroutineContext ?: EmptyCoroutineContext) + SupervisorJob(parentScope?.coroutineContext?.get(Job)))
     private val mutex: Mutex = Mutex()
-    private var activity: Activity? = null
-    private var socket: RpcSocket? = null
+    private var activity: io.github.pandier.kpresence.activity.Activity? = null
+    private var socket: io.github.pandier.kpresence.rpc.RpcSocket? = null
     private var connectJob: Deferred<ConnectResult>? = null
     private var autoReconnectJob: Job? = null
     private val _state = MutableStateFlow(State.DISCONNECTED)
@@ -138,7 +138,7 @@ public class KPresenceClient internal constructor(
      * If the client is disconnected, the activity is stored and sent
      * after establishing a successful connection.
      */
-    public fun update(newActivity: Activity?): Deferred<Unit> = async {
+    public fun update(newActivity: io.github.pandier.kpresence.activity.Activity?): Deferred<Unit> = async {
         mutex.withLock {
             if (activity == newActivity)
                 return@async
@@ -149,8 +149,8 @@ public class KPresenceClient internal constructor(
         }
     }
 
-    public fun update(block: ActivityBuilder.() -> Unit): Deferred<Unit> {
-        return update(Activity(block))
+    public fun update(block: io.github.pandier.kpresence.activity.ActivityBuilder.() -> Unit): Deferred<Unit> {
+        return update(_root_ide_package_.io.github.pandier.kpresence.activity.Activity(block))
     }
 
     /**
@@ -192,11 +192,11 @@ public class KPresenceClient internal constructor(
             logger.debug("Connecting")
 
             val result = runCatching {
-                RpcSocket(
+                _root_ide_package_.io.github.pandier.kpresence.rpc.RpcSocket(
                     clientId = clientId,
                     scope = scope,
                     logger = logger,
-                    channel = openRpcPacketChannel(unixPaths),
+                    channel = _root_ide_package_.io.github.pandier.kpresence.rpc.openRpcPacketChannel(unixPaths),
                     onReady = this@KPresenceClient::onSocketReady,
                     onClose = this@KPresenceClient::onSocketClose,
                 )
@@ -221,7 +221,7 @@ public class KPresenceClient internal constructor(
                         autoReconnectLocked()
                     }
 
-                    if (exception is DiscordNotFoundException) {
+                    if (exception is io.github.pandier.kpresence.exception.DiscordNotFoundException) {
                         if (userTriggered) {
                             logger.info("Could not find a running Discord instance")
                         }
@@ -241,13 +241,13 @@ public class KPresenceClient internal constructor(
         }
     }
 
-    private suspend fun onSocketReady(eventSocket: RpcSocket): Unit = mutex.withLock {
+    private suspend fun onSocketReady(eventSocket: io.github.pandier.kpresence.rpc.RpcSocket): Unit = mutex.withLock {
         if (eventSocket !== socket) return
         eventSocket.sendActivity(activity)
         _state.value = State.READY
     }
 
-    private suspend fun onSocketClose(eventSocket: RpcSocket): Unit = mutex.withLock {
+    private suspend fun onSocketClose(eventSocket: io.github.pandier.kpresence.rpc.RpcSocket): Unit = mutex.withLock {
         if (eventSocket !== socket) return
         socket = null
         _state.value = State.DISCONNECTED

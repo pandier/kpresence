@@ -1,4 +1,4 @@
-package dev.pandier.kpresence.util
+package io.github.pandier.kpresence.util
 
 import java.lang.System.getenv
 
