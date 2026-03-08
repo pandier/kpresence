@@ -35,8 +35,8 @@ public class KPresenceClient internal constructor(
     clientId: Long,
     parentScope: CoroutineScope?,
     public val logger: KPresenceLogger,
-    private val autoReconnect: Boolean,
-    private val autoReconnectDelay: Duration,
+    private var autoReconnect: Boolean,
+    private var autoReconnectPeriod: Duration,
     private val unixPaths: List<String>,
 ) : Closeable {
     /**
@@ -165,6 +165,16 @@ public class KPresenceClient internal constructor(
     }
 
     /**
+     * Changes the auto reconnect options.
+     */
+    public suspend fun changeAutoReconnect(autoReconnect: Boolean, autoReconnectPeriod: Duration) {
+        mutex.withLock {
+            this.autoReconnect = autoReconnect
+            this.autoReconnectPeriod = autoReconnectPeriod
+        }
+    }
+
+    /**
      * Cancels all processes.
      */
     override fun close() {
@@ -260,9 +270,9 @@ public class KPresenceClient internal constructor(
         autoReconnectJob?.cancel()
         autoReconnectJob = scope.launch(Dispatchers.IO) {
             try {
-                logger.debug("Reconnecting in $autoReconnectDelay")
+                logger.debug("Reconnecting in $autoReconnectPeriod")
 
-                delay(autoReconnectDelay)
+                delay(autoReconnectPeriod)
 
                 @Suppress("DeferredResultUnused")
                 mutex.withLock {
