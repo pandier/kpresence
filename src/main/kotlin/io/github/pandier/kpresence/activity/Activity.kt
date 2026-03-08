@@ -30,18 +30,18 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable
 public data class Activity(
     val name: String? = null,
-    val type: io.github.pandier.kpresence.activity.ActivityType = _root_ide_package_.io.github.pandier.kpresence.activity.ActivityType.PLAYING,
-    @SerialName("status_display_type") val statusDisplayType: io.github.pandier.kpresence.activity.StatusDisplayType = _root_ide_package_.io.github.pandier.kpresence.activity.StatusDisplayType.NAME,
-    val timestamps: io.github.pandier.kpresence.activity.ActivityTimestamps = _root_ide_package_.io.github.pandier.kpresence.activity.ActivityTimestamps(),
+    val type: ActivityType = ActivityType.PLAYING,
+    @SerialName("status_display_type") val statusDisplayType: StatusDisplayType = StatusDisplayType.NAME,
+    val timestamps: ActivityTimestamps = ActivityTimestamps(),
     val details: String? = null,
     @SerialName("details_url") val detailsUrl: String? = null,
     val state: String? = null,
     @SerialName("state_url") val stateUrl: String? = null,
-    val party: io.github.pandier.kpresence.activity.ActivityParty = _root_ide_package_.io.github.pandier.kpresence.activity.ActivityParty(),
-    val assets: io.github.pandier.kpresence.activity.ActivityAssets = _root_ide_package_.io.github.pandier.kpresence.activity.ActivityAssets(),
-    val secrets: io.github.pandier.kpresence.activity.ActivitySecrets = _root_ide_package_.io.github.pandier.kpresence.activity.ActivitySecrets(),
+    val party: ActivityParty = ActivityParty(),
+    val assets: ActivityAssets = ActivityAssets(),
+    val secrets: ActivitySecrets = ActivitySecrets(),
     val instance: Boolean? = null,
-    val buttons: List<io.github.pandier.kpresence.activity.ActivityButton> = listOf(),
+    val buttons: List<ActivityButton> = listOf(),
 ) {
     init {
         require(name == null || name.length in 1..128) { "name must be between 1 and 128 characters" }

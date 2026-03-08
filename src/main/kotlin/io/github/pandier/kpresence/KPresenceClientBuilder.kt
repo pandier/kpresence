@@ -1,5 +1,7 @@
 package io.github.pandier.kpresence
 
+import io.github.pandier.kpresence.logger.KPresenceLogger
+import io.github.pandier.kpresence.util.defaultUnixPaths
 import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -17,9 +19,9 @@ public class KPresenceClientBuilder(
     public var parentScope: CoroutineScope? = null
 
     /**
-     * The [io.github.pandier.kpresence.logger.KPresenceLogger] used for logging.
+     * The [KPresenceLogger] used for logging.
      */
-    public var logger: io.github.pandier.kpresence.logger.KPresenceLogger = _root_ide_package_.io.github.pandier.kpresence.logger.KPresenceLogger.Dummy
+    public var logger: KPresenceLogger = KPresenceLogger.Dummy
 
     /**
      * Toggles automatic reconnecting on disconnection.
@@ -37,7 +39,7 @@ public class KPresenceClientBuilder(
      * The value is lazily evaluated using the `os.name` JVM system property.
      */
     public val isUnix: Boolean
-        get() = _root_ide_package_.io.github.pandier.kpresence.util.isUnix
+        get() = io.github.pandier.kpresence.util.isUnix
 
     private val unixPaths: MutableList<String> = mutableListOf()
 
@@ -53,12 +55,12 @@ public class KPresenceClientBuilder(
 
     init {
         unixPaths {
-            addAll(_root_ide_package_.io.github.pandier.kpresence.util.defaultUnixPaths)
+            addAll(defaultUnixPaths)
         }
     }
 
-    internal fun build(): io.github.pandier.kpresence.KPresenceClient {
-        return _root_ide_package_.io.github.pandier.kpresence.KPresenceClient(
+    internal fun build(): KPresenceClient {
+        return KPresenceClient(
             clientId,
             parentScope,
             logger,
