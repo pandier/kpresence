@@ -1,7 +1,5 @@
 package io.github.pandier.kpresence
 
-import io.github.pandier.kpresence.logger.KPresenceLogger
-import io.github.pandier.kpresence.util.defaultUnixPaths
 import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -29,9 +27,9 @@ public class KPresenceClientBuilder(
     public var autoReconnect: Boolean = true
 
     /**
-     * The delay as a [Duration] used between automatic reconnections.
+     * The period as a [Duration] between automatic reconnections.
      */
-    public var autoReconnectDelay: Duration = 20.seconds
+    public var autoReconnectPeriod: Duration = 20.seconds
 
     /**
      * Indicates whether the runtime operating system is Unix-like.
@@ -65,7 +63,7 @@ public class KPresenceClientBuilder(
             parentScope,
             logger,
             autoReconnect,
-            autoReconnectDelay,
+            autoReconnectPeriod,
             unixPaths
         )
     }
