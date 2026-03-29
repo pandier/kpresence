@@ -1,89 +1,54 @@
-# 🧩 KPresence
+# kpresence
 
-**📦 A lightweight, cross-platform [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) library for interacting with Discord Rich Presence.**
+KPresence is a lightweight Kotlin/JVM library for interacting with Discord Rich Presence.
+This is a rewrite of [the original by vyfor](https://github.com/vyfor/kpresence) focusing on features
+for the [IntelliJ Discord Rich Presence](https://github.com/pandier/intellij-discord-rp) plugin.
+Because of that, the scope has been lowered from Kotlin Multiplatform to Kotlin JVM.
 
-## 💎 Features
-- Cross-platform compatibility (Windows, Linux, macOS)
-- Fast and user-friendly
-- Offers DSL support
-- Provides both JVM and Native implementations
-- Validates the activity fields before sending them
-- Supports Flatpak and Snap installations on Linux
-- Ability to extend and override the default search paths
+Requires Java 17 or later.
 
-## 🔌 Requirements
-- **Java**: `16 or later` (only for use within the JVM environment)
-
-## ⚙️ Installation
+## Adding dependency
 
 ```gradle
 dependencies {
-    implementation("io.github.vyfor:kpresence:0.6.6")
+    implementation("io.github.pandier:kpresence:0.7.0")
 }
 ```
 
-## ✨ Examples
+## Example
 
-### Initial connection and presence updates
 ```kt
-val client = RichClient(CLIENT_ID)
-  
-client.connect()
+fun main(): Unit = runBlocking {
+    val client = KPresenceClient(applicationId) {
+        parentScope = this@runBlocking
+        logger = KPresenceLogger.Println()
+    }
 
-client.update {
-    type = ActivityType.GAME
-    details = "Exploring Kotlin Native"
-    state = "Writing code"
-    
-    timestamps {
-        start = now() - 3600_000
-        end = now() + 3600_000
+    // Connects to Discord in the background
+    client.connect()
+
+    client.update {
+        details = "This is the 1st line"
+        state = "This is the 2nd line"
+
+        timestamps {
+            start = now() - 60_000
+        }
+
+        assets {
+            largeImage = "cool_logo"
+            largeText = "This is a cool logo"
+
+            smallImage = "https://example.com/cooler_logo.png"
+        }
+
+        button("Checkout KPresence", "https://github.com/pandier/kpresence")
     }
     
-    party {
-      id = "myParty"
-      size(current = 1, max = 5)
-    }
+    delay(10_000)
     
-    assets {
-        largeImage = "kotlin_logo"
-        largeText = "Kotlin"
-        smallImage = "jetbrains_logo"
-        smallText = "JetBrains"
-    }
-    
-    secrets {
-        join = "joinSecret"
-        spectate = "spectateSecret"
-        match = "matchSecret"
-    }
-    
-    button("Learn more", "https://kotlinlang.org/")
-    button("Try it yourself", "https://play.kotlinlang.org/")
+    // Disconnects gracefuly and closes the client (cancels its job)
+    client.disconnect().await()
+    client.close()
 }
-```
-
-### Event handling
-```kt
-val client = RichClient(CLIENT_ID)
-
-client.on<ReadyEvent> {
-  update(activity)
-}
-
-client.on<ActivityUpdateEvent> {
-  logger?.info("Updated rich presence")
-}
-
-client.on<DisconnectEvent> {
-  connect(shouldBlock = true) // Attempt to reconnect
-}
-
-client.connect(shouldBlock = false)
-```
-
-### Logging
-```kt
-val client = RichClient(CLIENT_ID)
-client.logger = ILogger.default()
 ```
