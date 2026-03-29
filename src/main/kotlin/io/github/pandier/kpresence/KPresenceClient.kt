@@ -157,10 +157,15 @@ public class KPresenceClient internal constructor(
      * Changes the client id that will be used for the next connection process.
      *
      * Requires to call [reconnect] afterward for it to update in Discord.
+     *
+     * Returns true if the new client id is different from the previous one.
      */
-    public suspend fun changeClientId(clientId: Long) {
+    public suspend fun changeClientId(clientId: Long): Boolean {
         mutex.withLock {
+            if (this.clientId == clientId)
+                return false
             this.clientId = clientId
+            return true
         }
     }
 
